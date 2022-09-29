@@ -5,6 +5,127 @@ Created on Wed May  4 23:37:42 2022
 
 @author: enzovillafuerte
 """
+"""
+Web Scrapping Section
+"""
+
+# import libraries
+import requests
+from bs4 import BeautifulSoup
+import json
+import pandas as pd
+
+
+#scrape a single game shots. We will allow users to enter a base url
+base_url = 'https://understat.com/match/'
+match = str(input('Please enter the match id: '))
+url = base_url+match
+
+#Use requests to get the webpage and BeautifulSoup to parse the page
+res = requests.get(url)  # <- see tutorial video on this
+soup = BeautifulSoup(res.content, 'lxml')    # <- see tutorial video on this
+scripts = soup.find_all('script')
+
+#get only the shotsData
+strings = scripts[1].string
+
+
+# strip unnecessary symbols and get only JSON data 
+ind_start = strings.index("('")+2 
+ind_end = strings.index("')") 
+json_data = strings[ind_start:ind_end] 
+json_data = json_data.encode('utf8').decode('unicode_escape')
+
+#convert string to json format
+data = json.loads(json_data)
+
+""" we are going to create lists for the different variables we want to store. In this case we want to get the coordinates x and y out, the xG values,
+the result of the shot and the minute of the shot.
+
+After we created both data_away and data_home variables, we can manually use indexing to see a specific record (example: data_home[1] and see the 
+                                                                                                                columns available.
+                                                                                                                
+Then we will use a loop to iterate through all the records and assign values to the variable lists just created"""                                                                                                                
+
+
+x = []
+y = []
+xG = []
+result = []
+minute = []
+player = []
+team = []
+
+data_away = data['a']
+data_home = data['h']
+
+data_home[1]
+
+for index in range(len(data_home)):
+    for key in data_home[index]:
+        if key == 'X':
+            x.append(data_home[index][key])
+        if key == 'Y':
+            y.append(data_home[index][key])
+        if key == 'h_team':
+            team.append(data_home[index][key])
+        if key == 'xG':
+            xG.append(data_home[index][key])
+        if key == 'result':
+            result.append(data_home[index][key])   
+        if key == 'minute':
+            minute.append(data_home[index][key])
+        if key == 'player':
+            player.append(data_home[index][key])    
+
+for index in range(len(data_away)):
+    for key in data_away[index]:
+        if key == 'X':
+            x.append(data_away[index][key])
+        if key == 'Y':
+            y.append(data_away[index][key])
+        if key == 'a_team':
+            team.append(data_away[index][key])
+        if key == 'xG':
+            xG.append(data_away[index][key])
+        if key == 'result':
+            result.append(data_away[index][key])
+        if key == 'minute':
+            minute.append(data_away[index][key])   
+        if key == 'player':
+            player.append(data_away[index][key])      
+ 
+            
+# create the pandas dataframe with the lists previously created with the loops
+            
+col_names = ['x','y','xG','result','team', 'minute', 'player']
+df = pd.DataFrame([x,y,xG,result,team, minute, player],index=col_names)
+df = df.T      
+    
+
+
+# export the dataframe into a csv file
+df.to_csv("MadridvsBarcaxGDataset.csv")
+
+# when trying to use the groupby function for the xG value, it add each record as if they were integers (non numbers)
+#So we gotta get the columns which we want to change the type of the column
+
+df.dtypes  # if we look at the dtypes, we'll see that all the columns are set as objects. We gotta change those that are numeric to float
+
+list_columns = ["x", "y", "xG", "minute"]
+for value in list_columns:
+    df[value] = df[value].astype(float)
+    
+df.dtypes # now if we re-run this line we'll see the changes made    
+
+df.groupby(by=["team"])[["xG"]].sum()
+
+
+
+"""
+xG Flowchart Development Section
+"""
+
 
 #import packages
 import pandas as pd
